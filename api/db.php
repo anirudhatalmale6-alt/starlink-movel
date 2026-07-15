@@ -20,10 +20,15 @@ function db() {
     name TEXT NOT NULL,
     whatsapp TEXT NOT NULL,
     role TEXT DEFAULT '',
+    photo TEXT DEFAULT '',
     active INTEGER NOT NULL DEFAULT 1,
     queue_order INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )");
+  // migração: coluna photo em bancos já existentes
+  $acols = [];
+  foreach ($pdo->query("PRAGMA table_info(attendants)") as $c) $acols[$c['name']] = true;
+  if (empty($acols['photo'])) $pdo->exec("ALTER TABLE attendants ADD COLUMN photo TEXT DEFAULT ''");
 
   $pdo->exec("CREATE TABLE IF NOT EXISTS leads (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

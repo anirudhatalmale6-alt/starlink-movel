@@ -180,12 +180,27 @@ img{max-width:100%;display:block}
 
 .qoptions{display:flex;flex-direction:column;gap:12px}
 .qopt{width:100%;text-align:left;background:rgba(255,255,255,.02);border:1px solid var(--line);
-  color:#e8e8ec;font-family:inherit;font-size:16px;font-weight:400;padding:20px 22px;border-radius:3px;
-  cursor:pointer;transition:.28s var(--ease);display:flex;align-items:center;justify-content:space-between}
+  color:#e8e8ec;font-family:inherit;font-size:16px;font-weight:400;padding:17px 20px;border-radius:4px;
+  cursor:pointer;transition:.28s var(--ease);display:flex;align-items:center;gap:15px}
 .qopt:hover{background:rgba(255,255,255,.06);border-color:var(--line-2);transform:translateX(4px)}
 .qopt.sel{background:#fff;color:#000;border-color:#fff}
-.qopt .qopt__arw{opacity:0;transition:.25s}
-.qopt:hover .qopt__arw{opacity:.5}
+.qopt__ic{flex:none;width:22px;height:22px;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:color .28s}
+.qopt:hover .qopt__ic,.qopt.sel .qopt__ic{color:inherit}
+.qopt__lbl{flex:1;display:flex;flex-direction:column;gap:3px}
+.qopt__lbl b{font-weight:500}
+.qopt__lbl em{font-style:normal;font-size:13px;color:var(--muted-2)}
+.qopt.sel .qopt__lbl em{color:rgba(0,0,0,.55)}
+.qopt__arw{flex:none;opacity:0;transform:translateX(-4px);transition:.25s;color:var(--muted)}
+.qopt:hover .qopt__arw{opacity:.6;transform:none}
+.qopt.sel .qopt__arw{opacity:.7;color:#000}
+.qopt--cta{padding:20px}
+.qopt__ic--zap{color:#fff}
+
+/* campo com rótulo persistente (ex.: Localização) */
+.qfield{border-bottom:1px solid var(--line-2);transition:border-color .3s}
+.qfield:focus-within{border-color:#fff}
+.qfield__lbl{display:block;font-size:12px;color:var(--muted-2);margin-bottom:2px}
+.qfield .qinput{border:none;padding:6px 0 12px;font-size:20px}
 
 /* review step */
 .qreview{display:flex;flex-direction:column;border-top:1px solid var(--line);margin-bottom:40px}
@@ -201,12 +216,33 @@ img{max-width:100%;display:block}
 .qbtn__chev{transition:transform .3s var(--ease)}
 .qbtn:hover:not(:disabled) .qbtn__chev{transform:translateX(3px)}
 
-/* loading / connecting screen */
-.qconnect{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:60vh;gap:30px}
+/* loading / connecting screen com radar (pulsos concêntricos) */
+.qconnect{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:62vh;gap:34px}
 .qspinner{width:46px;height:46px;border:2px solid var(--line-2);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.qconnect__msg{font-size:20px;font-weight:400;min-height:28px}
+.qradar{position:relative;width:120px;height:120px;display:flex;align-items:center;justify-content:center}
+.qradar span{position:absolute;left:50%;top:50%;width:20px;height:20px;border:1px solid rgba(255,255,255,.5);border-radius:50%;
+  transform:translate(-50%,-50%);animation:radar 2.4s ease-out infinite}
+.qradar span:nth-child(2){animation-delay:.8s}
+.qradar span:nth-child(3){animation-delay:1.6s}
+.qradar i{position:absolute;left:50%;top:50%;width:12px;height:12px;background:#fff;border-radius:50%;transform:translate(-50%,-50%);
+  box-shadow:0 0 18px 3px rgba(255,255,255,.55);animation:corepulse 1.6s ease-in-out infinite}
+@keyframes radar{0%{width:20px;height:20px;opacity:.9}100%{width:120px;height:120px;opacity:0}}
+@keyframes corepulse{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:1}50%{transform:translate(-50%,-50%) scale(.7);opacity:.6}}
+.qconnect__msg{font-size:20px;font-weight:400;min-height:28px;animation:qin .5s var(--ease)}
 .qconnect__brand{font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:var(--muted-2)}
+
+/* card do atendente designado */
+.qattend{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:62vh;gap:0;animation:qin .6s var(--ease)}
+.qattend__label{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--muted-2);margin-bottom:30px}
+.qattend__avatar{position:relative;width:104px;height:104px;margin-bottom:22px}
+.qattend__avatar img{width:104px;height:104px;border-radius:50%;object-fit:cover;border:1px solid var(--line-2)}
+.qattend__badge{position:absolute;right:6px;bottom:6px;width:16px;height:16px;background:#22c55e;border:3px solid #000;border-radius:50%}
+.qattend__name{font-size:24px;font-weight:600;letter-spacing:-.01em}
+.qattend__role{font-size:14px;color:var(--muted);margin-top:5px}
+.qattend__status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-top:22px}
+.qattend__dot{width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px 1px rgba(34,197,94,.7);animation:corepulse 1.8s ease-in-out infinite}
+.qattend__btn{margin-top:40px;width:100%;max-width:340px;text-decoration:none;gap:10px}
 
 /* ===================== RESPONSIVE ===================== */
 @media(max-width:900px){

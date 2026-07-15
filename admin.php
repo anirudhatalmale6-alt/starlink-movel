@@ -24,12 +24,12 @@ if ($authed && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
   if ($a === 'add') {
     $max = (int) db()->query("SELECT COALESCE(MAX(queue_order),0) m FROM attendants")->fetch()['m'];
-    $st = db()->prepare("INSERT INTO attendants (name,whatsapp,role,active,queue_order) VALUES (?,?,?,1,?)");
-    $st->execute([trim($_POST['name']), trim($_POST['whatsapp']), trim($_POST['role'] ?? ''), $max + 1]);
+    $st = db()->prepare("INSERT INTO attendants (name,whatsapp,role,photo,active,queue_order) VALUES (?,?,?,?,1,?)");
+    $st->execute([trim($_POST['name']), trim($_POST['whatsapp']), trim($_POST['role'] ?? ''), trim($_POST['photo'] ?? ''), $max + 1]);
   }
   elseif ($a === 'update') {
-    $st = db()->prepare("UPDATE attendants SET name=?, whatsapp=?, role=? WHERE id=?");
-    $st->execute([trim($_POST['name']), trim($_POST['whatsapp']), trim($_POST['role'] ?? ''), (int)$_POST['id']]);
+    $st = db()->prepare("UPDATE attendants SET name=?, whatsapp=?, role=?, photo=? WHERE id=?");
+    $st->execute([trim($_POST['name']), trim($_POST['whatsapp']), trim($_POST['role'] ?? ''), trim($_POST['photo'] ?? ''), (int)$_POST['id']]);
   }
   elseif ($a === 'toggle') {
     db()->prepare("UPDATE attendants SET active = 1 - active WHERE id=?")->execute([(int)$_POST['id']]);
@@ -163,9 +163,10 @@ $tab = $_GET['tab'] ?? 'attendants';
         <div class="grid">
           <div><label>Nome</label><input name="name" required placeholder="Ex: Carlos" /></div>
           <div><label>WhatsApp (com DDD)</label><input name="whatsapp" required placeholder="Ex: 11 99999-8888" /></div>
-          <div><label>Função (opcional)</label><input name="role" placeholder="Ex: Especialista" /></div>
+          <div><label>Função (opcional)</label><input name="role" placeholder="Especialista em Ativação" /></div>
           <div><button class="btn btn--p" type="submit">Adicionar</button></div>
         </div>
+        <div style="margin-top:12px"><label>Foto do atendente — URL (opcional, aparece no card final antes do WhatsApp)</label><input name="photo" placeholder="https://... (deixe em branco para usar as iniciais)" /></div>
       </form>
     </div>
 
@@ -203,8 +204,9 @@ $tab = $_GET['tab'] ?? 'attendants';
                   <input type="hidden" name="action" value="update"><input type="hidden" name="id" value="<?= $at['id'] ?>">
                   <div><label>Nome</label><input name="name" value="<?= h($at['name']) ?>" required></div>
                   <div><label>WhatsApp</label><input name="whatsapp" value="<?= h($at['whatsapp']) ?>" required></div>
-                  <div><label>Função</label><input name="role" value="<?= h($at['role']) ?>"></div>
+                  <div><label>Função</label><input name="role" value="<?= h($at['role']) ?>" placeholder="Especialista em Ativação"></div>
                   <div><button class="btn btn--p" type="submit">Salvar</button></div>
+                  <div style="grid-column:1/-1"><label>Foto (URL)</label><input name="photo" value="<?= h($at['photo']) ?>" placeholder="https://... (opcional)"></div>
                 </form>
               </div>
             </td>

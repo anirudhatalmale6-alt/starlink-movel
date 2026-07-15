@@ -127,8 +127,25 @@ if (strpos($num, '55') !== 0) $num = '55' . $num;
 
 $url = 'https://wa.me/' . $num . '?text=' . rawurlencode($message);
 
+// avatar: usa a foto cadastrada; se não houver, gera um avatar com as iniciais
+function initials_avatar($name) {
+  $parts = preg_split('/\s+/', trim($name));
+  $ini = '';
+  foreach ($parts as $p) { if ($p !== '') $ini .= mb_substr($p, 0, 1); if (mb_strlen($ini) >= 2) break; }
+  $ini = mb_strtoupper($ini ?: '?');
+  $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">'
+       . '<rect width="160" height="160" fill="#1c1c1f"/>'
+       . '<text x="80" y="80" dy="0.35em" text-anchor="middle" font-family="Inter,Arial,sans-serif" '
+       . 'font-size="64" font-weight="600" fill="#e8e8ec">' . htmlspecialchars($ini, ENT_QUOTES) . '</text></svg>';
+  return 'data:image/svg+xml;base64,' . base64_encode($svg);
+}
+$photo = trim($att['photo'] ?? '');
+if ($photo === '') $photo = initials_avatar($att['name']);
+
 echo json_encode([
   'ok'            => true,
   'attendant'     => $att['name'],
+  'role'          => trim($att['role'] ?? '') !== '' ? $att['role'] : 'Especialista em Ativação',
+  'photo'         => $photo,
   'whatsapp_url'  => $url,
-]);
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
