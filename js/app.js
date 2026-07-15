@@ -130,7 +130,7 @@
       html += row('Internet atual', answers.internet_atual);
       html += row('Ativação', answers.ativacao || 'Imediata');
       html += '</div>';
-      html += '<div class="qfoot"><button class="qbtn" id="qsend">Confirmar e Enviar &rarr;</button></div>';
+      html += '<div class="qfoot"><button class="qbtn" id="qsend">Confirmar e Enviar' + CHEV + '</button></div>';
     }
     html += '</div>';
     body.innerHTML = html;
@@ -140,8 +140,9 @@
   function row(k, v) {
     return '<div class="qreview__row"><span class="qreview__k">' + k + '</span><span class="qreview__v">' + (v || '—') + '</span></div>';
   }
+  var CHEV = '<svg class="qbtn__chev" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>';
   function foot(label) {
-    return '<div class="qfoot"><button class="qbtn" id="qnext">' + label + ' &rarr;</button></div>';
+    return '<div class="qfoot"><button class="qbtn" id="qnext">' + label + CHEV + '</button></div>';
   }
 
   function wire() {
@@ -221,10 +222,22 @@
       if (i < CONNECT_MSGS.length && msgEl) msgEl.textContent = CONNECT_MSGS[i];
     }, 1100);
 
+    // metadados do dispositivo/conexão (melhor esforço — depende do navegador)
+    var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    var payload = {};
+    for (var k in answers) if (answers.hasOwnProperty(k)) payload[k] = answers[k];
+    payload._meta = {
+      conn_effective: conn && conn.effectiveType ? conn.effectiveType : '',
+      conn_type: conn && conn.type ? conn.type : '',
+      screen: (window.screen ? window.screen.width + 'x' + window.screen.height : ''),
+      lang: navigator.language || '',
+      platform: navigator.platform || ''
+    };
+
     fetch('api/lead.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(answers)
+      body: JSON.stringify(payload)
     })
       .then(function (r) { return r.json(); })
       .then(function (data) {

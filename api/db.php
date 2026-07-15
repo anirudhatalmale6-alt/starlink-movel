@@ -36,8 +36,29 @@ function db() {
     ativacao TEXT,
     attendant_id INTEGER,
     attendant_name TEXT,
+    ip TEXT,
+    user_agent TEXT,
+    device TEXT,
+    conn_type TEXT,
+    geo_city TEXT,
+    geo_region TEXT,
+    geo_country TEXT,
+    geo_isp TEXT,
+    extra TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )");
+
+  // migração: adiciona colunas novas em bancos já existentes
+  $have = [];
+  foreach ($pdo->query("PRAGMA table_info(leads)") as $c) $have[$c['name']] = true;
+  $add = [
+    'ip' => 'TEXT', 'user_agent' => 'TEXT', 'device' => 'TEXT', 'conn_type' => 'TEXT',
+    'geo_city' => 'TEXT', 'geo_region' => 'TEXT', 'geo_country' => 'TEXT',
+    'geo_isp' => 'TEXT', 'extra' => 'TEXT'
+  ];
+  foreach ($add as $col => $type) {
+    if (empty($have[$col])) $pdo->exec("ALTER TABLE leads ADD COLUMN $col $type");
+  }
 
   $pdo->exec("CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,

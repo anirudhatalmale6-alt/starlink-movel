@@ -27,18 +27,79 @@ if ($lead['nome'] === '' || $lead['whatsapp'] === '') {
   echo json_encode(['ok' => false, 'error' => 'missing_fields']); exit;
 }
 
+/* ---------- captura de metadados do lead ---------- */
+// IP real (considerando proxies / Cloudflare)
+function client_ip() {
+  foreach (['HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR'] as $k) {
+    if (!empty($_SERVER[$k])) {
+      $ip = trim(explode(',', $_SERVER[$k])[0]);
+      if (filter_var($ip, FILTER_VALIDATE_IP)) return $ip;
+    }
+  }
+  return $_SERVER['REMOTE_ADDR'] ?? '';
+}
+$ip = client_ip();
+$ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+
+// rótulo amigável do dispositivo a partir do User Agent
+function device_label($ua) {
+  if ($ua === '') return '';
+  $os = 'Desconhecido';
+  if (preg_match('/iPhone/i', $ua)) $os = 'iPhone (iOS)';
+  elseif (preg_match('/iPad/i', $ua)) $os = 'iPad (iOS)';
+  elseif (preg_match('/Android[ ;]*([0-9.]+)?/i', $ua, $m)) $os = 'Android' . (!empty($m[1]) ? ' ' . $m[1] : '');
+  elseif (preg_match('/Windows NT/i', $ua)) $os = 'Windows';
+  elseif (preg_match('/Mac OS X/i', $ua)) $os = 'Mac';
+  elseif (preg_match('/Linux/i', $ua)) $os = 'Linux';
+  $br = '';
+  if (preg_match('/Edg\//i', $ua)) $br = 'Edge';
+  elseif (preg_match('/OPR\/|Opera/i', $ua)) $br = 'Opera';
+  elseif (preg_match('/Chrome\//i', $ua)) $br = 'Chrome';
+  elseif (preg_match('/Firefox\//i', $ua)) $br = 'Firefox';
+  elseif (preg_match('/Safari\//i', $ua)) $br = 'Safari';
+  return trim($os . ($br ? ' · ' . $br : ''));
+}
+$device = device_label($ua);
+
+// tipo de conexão informado pelo navegador (4g/wifi/…)
+$meta = is_array($in['_meta'] ?? null) ? $in['_meta'] : [];
+$connType = clean($meta['conn_type'] ?? '');
+$connEff  = clean($meta['conn_effective'] ?? '');
+$conn = trim($connType . ($connType && $connEff ? ' / ' : '') . $connEff);
+$conn = $conn !== '' ? strtoupper($conn) : '';
+
+// geolocalização por IP (API gratuita ip-api.com — só resolve IPs públicos)
+$geo = ['city' => '', 'region' => '', 'country' => '', 'isp' => ''];
+if ($ip && filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+  $ctx = stream_context_create(['http' => ['timeout' => 3]]);
+  $resp = @file_get_contents("http://ip-api.com/json/{$ip}?fields=status,country,regionName,city,isp&lang=pt-BR", false, $ctx);
+  if ($resp) {
+    $g = json_decode($resp, true);
+    if (($g['status'] ?? '') === 'success') {
+      $geo = ['city' => $g['city'] ?? '', 'region' => $g['regionName'] ?? '', 'country' => $g['country'] ?? '', 'isp' => $g['isp'] ?? ''];
+    }
+  }
+}
+$extra = json_encode([
+  'screen' => clean($meta['screen'] ?? ''),
+  'lang'   => clean($meta['lang'] ?? ''),
+  'platform' => clean($meta['platform'] ?? ''),
+], JSON_UNESCAPED_UNICODE);
+
 // próximo atendente da fila
 $att = next_attendant();
 if (!$att) { echo json_encode(['ok' => false, 'error' => 'no_attendant']); exit; }
 
 // salva o lead
 $st = db()->prepare("INSERT INTO leads
-  (nome,whatsapp,localizacao,motivo_uso,dispositivo,internet_atual,ativacao,attendant_id,attendant_name)
-  VALUES (?,?,?,?,?,?,?,?,?)");
+  (nome,whatsapp,localizacao,motivo_uso,dispositivo,internet_atual,ativacao,attendant_id,attendant_name,
+   ip,user_agent,device,conn_type,geo_city,geo_region,geo_country,geo_isp,extra)
+  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 $st->execute([
   $lead['nome'], $lead['whatsapp'], $lead['localizacao'], $lead['motivo_uso'],
   $lead['dispositivo'], $lead['internet_atual'], $lead['ativacao'],
-  $att['id'], $att['name']
+  $att['id'], $att['name'],
+  $ip, $ua, $device, $conn, $geo['city'], $geo['region'], $geo['country'], $geo['isp'], $extra
 ]);
 
 // monta a mensagem a partir do modelo

@@ -110,7 +110,12 @@ $tab = $_GET['tab'] ?? 'attendants';
   .err{background:rgba(239,68,68,.12);color:#f87171;padding:10px 13px;border-radius:6px;font-size:13px;margin-bottom:14px}
   .note{font-size:12.5px;color:#6b6b72;margin-top:14px;line-height:1.6}
   .empty{padding:40px;text-align:center;color:#6b6b72;font-size:14px}
-  @media(max-width:680px){.grid{grid-template-columns:1fr}.hide-sm{display:none}}
+  .det{display:grid;grid-template-columns:1fr 1fr;gap:26px;padding:18px 6px}
+  .det__h{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#6b6b72;font-weight:600;margin-bottom:12px}
+  .det__row{display:flex;justify-content:space-between;gap:16px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px}
+  .det__row span{color:#7a7a80}
+  .det__row b{color:#e8e8ec;text-align:right;max-width:65%}
+  @media(max-width:680px){.grid{grid-template-columns:1fr}.hide-sm{display:none}.det{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -217,28 +222,59 @@ $tab = $_GET['tab'] ?? 'attendants';
 
   <?php else: /* ===== LEADS ===== */ ?>
     <div class="card">
-      <h2>Leads capturados</h2>
+      <h2>Leads capturados &nbsp;<span class="muted">— clique em "Detalhes" para ver IP, geolocalização, dispositivo e conexão</span></h2>
       <?php if (!$leads): ?>
         <div class="empty">Nenhum lead capturado ainda.</div>
       <?php else: ?>
       <table>
-        <thead><tr><th>Data</th><th>Nome</th><th>WhatsApp</th><th class="hide-sm">Local</th><th class="hide-sm">Cenário</th><th class="hide-sm">Disp.</th><th class="hide-sm">Internet</th><th>Atendente</th><th></th></tr></thead>
+        <thead><tr><th>Data / Hora</th><th>Nome</th><th>WhatsApp</th><th class="hide-sm">Localização</th><th class="hide-sm">Cenário</th><th>Atendente</th><th></th><th></th></tr></thead>
         <tbody>
-        <?php foreach ($leads as $ld): ?>
+        <?php foreach ($leads as $ld):
+          $geoParts = array_filter([$ld['geo_city'], $ld['geo_region'], $ld['geo_country']]);
+          $geo = $geoParts ? implode(', ', $geoParts) : '—';
+          $ex = json_decode($ld['extra'] ?? '', true) ?: [];
+        ?>
           <tr>
-            <td class="muted" style="white-space:nowrap"><?= h(date('d/m H:i', strtotime($ld['created_at']))) ?></td>
+            <td class="muted" style="white-space:nowrap"><?= h(date('d/m/Y H:i', strtotime($ld['created_at']))) ?></td>
             <td><strong><?= h($ld['nome']) ?></strong></td>
             <td><a href="https://wa.me/55<?= preg_replace('/\D/','',$ld['whatsapp']) ?>" target="_blank" style="color:#4ade80;text-decoration:none">+55 <?= h($ld['whatsapp']) ?></a></td>
             <td class="hide-sm muted"><?= h($ld['localizacao']) ?></td>
             <td class="hide-sm muted"><?= h($ld['motivo_uso']) ?></td>
-            <td class="hide-sm muted"><?= h($ld['dispositivo']) ?></td>
-            <td class="hide-sm muted"><?= h($ld['internet_atual']) ?></td>
             <td class="muted"><?= h($ld['attendant_name']) ?></td>
+            <td><button class="btn btn--sm" onclick="toggleDet(<?= $ld['id'] ?>)">Detalhes</button></td>
             <td><form class="inline" method="post" onsubmit="return confirm('Excluir este lead?')"><input type="hidden" name="action" value="delete_lead"><input type="hidden" name="tab" value="leads"><input type="hidden" name="id" value="<?= $ld['id'] ?>"><button class="btn btn--sm btn--danger">✕</button></form></td>
+          </tr>
+          <tr id="det-<?= $ld['id'] ?>" style="display:none">
+            <td colspan="8" style="background:rgba(255,255,255,.02)">
+              <div class="det">
+                <div class="det__col">
+                  <div class="det__h">Respostas do quiz</div>
+                  <div class="det__row"><span>Nome</span><b><?= h($ld['nome']) ?></b></div>
+                  <div class="det__row"><span>WhatsApp</span><b>+55 <?= h($ld['whatsapp']) ?></b></div>
+                  <div class="det__row"><span>Localização (informada)</span><b><?= h($ld['localizacao']) ?: '—' ?></b></div>
+                  <div class="det__row"><span>Cenário de uso</span><b><?= h($ld['motivo_uso']) ?: '—' ?></b></div>
+                  <div class="det__row"><span>Dispositivo (quiz)</span><b><?= h($ld['dispositivo']) ?: '—' ?></b></div>
+                  <div class="det__row"><span>Internet atual</span><b><?= h($ld['internet_atual']) ?: '—' ?></b></div>
+                  <div class="det__row"><span>Ativação</span><b><?= h($ld['ativacao']) ?: '—' ?></b></div>
+                </div>
+                <div class="det__col">
+                  <div class="det__h">Dados técnicos do contato</div>
+                  <div class="det__row"><span>Data e hora exatas</span><b><?= h(date('d/m/Y H:i:s', strtotime($ld['created_at']))) ?></b></div>
+                  <div class="det__row"><span>Endereço IP</span><b><?= h($ld['ip']) ?: '—' ?></b></div>
+                  <div class="det__row"><span>Geolocalização (IP)</span><b><?= h($geo) ?></b></div>
+                  <div class="det__row"><span>Provedor (ISP)</span><b><?= h($ld['geo_isp']) ?: '—' ?></b></div>
+                  <div class="det__row"><span>Dispositivo (User Agent)</span><b><?= h($ld['device']) ?: '—' ?></b></div>
+                  <div class="det__row"><span>Tipo de conexão</span><b><?= h($ld['conn_type']) ?: '—' ?></b></div>
+                  <?php if (!empty($ex['screen'])): ?><div class="det__row"><span>Tela / Idioma</span><b><?= h($ex['screen']) ?> · <?= h($ex['lang'] ?? '') ?></b></div><?php endif; ?>
+                  <div class="det__row"><span>User Agent completo</span><b style="font-weight:400;font-size:11.5px;word-break:break-all"><?= h($ld['user_agent']) ?: '—' ?></b></div>
+                </div>
+              </div>
+            </td>
           </tr>
         <?php endforeach; ?>
         </tbody>
       </table>
+      <div class="note">Obs.: a geolocalização e o provedor são obtidos pelo IP público do visitante. O "tipo de conexão" (4G/5G/WiFi) é informado pelo navegador quando disponível — alguns navegadores (ex.: Safari no iPhone) não expõem esse dado por privacidade; nesses casos aparece "—". O modelo exato do aparelho não é exposto pelos navegadores, por isso guardamos o User Agent completo e o sistema/navegador identificados.</div>
       <?php endif; ?>
     </div>
   <?php endif; ?>
@@ -249,6 +285,10 @@ $tab = $_GET['tab'] ?? 'attendants';
     function editRow(id){
       var el = document.getElementById('editform-'+id);
       el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
+    function toggleDet(id){
+      var el = document.getElementById('det-'+id);
+      el.style.display = el.style.display === 'none' ? 'table-row' : 'none';
     }
   </script>
 <?php endif; ?>
