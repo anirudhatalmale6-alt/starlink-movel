@@ -47,7 +47,15 @@ function device_label($ua) {
   $os = 'Desconhecido';
   if (preg_match('/iPhone/i', $ua)) $os = 'iPhone (iOS)';
   elseif (preg_match('/iPad/i', $ua)) $os = 'iPad (iOS)';
-  elseif (preg_match('/Android[ ;]*([0-9.]+)?/i', $ua, $m)) $os = 'Android' . (!empty($m[1]) ? ' ' . $m[1] : '');
+  elseif (preg_match('/Android[ ;]*([0-9.]+)?/i', $ua, $m)) {
+    $os = 'Android' . (!empty($m[1]) ? ' ' . $m[1] : '');
+    // muitos aparelhos Android trazem o modelo no próprio User Agent
+    if (preg_match('/Android[^;]*;\s*([^;)]+?)(?:\s+Build|[);])/i', $ua, $mm)) {
+      $model = trim($mm[1]);
+      $ignore = ['K', 'wv', 'Mobile']; // placeholders do Chrome com UA reduzido
+      if ($model !== '' && !in_array($model, $ignore, true)) $os .= ' · ' . $model;
+    }
+  }
   elseif (preg_match('/Windows NT/i', $ua)) $os = 'Windows';
   elseif (preg_match('/Mac OS X/i', $ua)) $os = 'Mac';
   elseif (preg_match('/Linux/i', $ua)) $os = 'Linux';
